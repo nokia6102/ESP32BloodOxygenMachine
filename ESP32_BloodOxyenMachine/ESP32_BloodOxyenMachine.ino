@@ -8,6 +8,10 @@
 #include "MAX30105.h"           //MAX3010x library
 #include "heartRate.h"          //Heart rate calculating algorithm
 #include "ESP32Servo.h"
+#include <U8g2lib.h>            //中文字庫
+
+U8G2_SSD1306_128X64_NONAME_1_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
+
 MAX30105 particleSensor;
 int Tonepin = 4;
 //計算心跳用變數
@@ -70,6 +74,9 @@ static const unsigned char PROGMEM O2_bmp[] = {
 };
 
 void setup() {
+  u8g2.begin();
+  u8g2.enableUTF8Print();  //啟用UTF8文字的功能 
+  
   Serial.begin(115200);
   Serial.println("System Start");
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C); //Start the OLED display
@@ -96,7 +103,7 @@ void setup() {
   particleSensor.setPulseAmplitudeGreen(0); //Turn off Green LED
 }
 
-void loop() {
+void loop() { 
   long irValue = particleSensor.getIR();    //Reading the IR value it will permit us to know if there's a finger on the sensor or not
   //是否有放手指
   if (irValue > FINGER_ON ) {
@@ -178,6 +185,16 @@ void loop() {
     //清除血氧數據
     avered = 0; aveir = 0; sumirrms = 0; sumredrms = 0;
     SpO2 = 0; ESpO2 = 90.0;
+
+    //中文
+    u8g2.setFont(u8g2_font_unifont_t_chinese1); //使用我們做好的字型
+    u8g2.firstPage();
+     do {
+     u8g2.setCursor(35, 40);
+     u8g2.print("放上手指");
+   } while ( u8g2.nextPage() );
+ 
+    /* 英文
     //顯示Finger Please
     display.clearDisplay();
     display.setTextSize(2);
@@ -187,6 +204,7 @@ void loop() {
     display.setCursor(30, 35);
     display.println("Please");
     display.display();
+    */
     noTone(Tonepin);
   }
 }
