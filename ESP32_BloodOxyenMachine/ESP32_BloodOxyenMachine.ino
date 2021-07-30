@@ -9,8 +9,21 @@
 #include "heartRate.h"          //Heart rate calculating algorithm
 #include "ESP32Servo.h"
 #include <U8g2lib.h>            //中文字庫
-
 U8G2_SSD1306_128X64_NONAME_1_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);   //中文字庫用變數
+
+#define CHT 0;          
+bool cht=CHT;       //預設是中文顯示
+
+//---重新定義FlashButton按鍵
+#define FlashButtonPIN 0
+volatile int dMode = 1;
+
+int last_dMode = 0;
+
+void IRAM_ATTR handleInterrupt() {
+  dMode++; 
+}
+//---
 
 MAX30105 particleSensor;
 int Tonepin = 4;
@@ -76,6 +89,9 @@ static const unsigned char PROGMEM O2_bmp[] = {
 void setup() {
   u8g2.begin();
   u8g2.enableUTF8Print();  //啟用UTF8文字的功能 
+
+  pinMode(FlashButtonPIN, INPUT_PULLUP);    //設定一個中斷給按鍵
+  attachInterrupt(digitalPinToInterrupt(FlashButtonPIN), handleInterrupt, FALLING);
   
   Serial.begin(115200);
   Serial.println("System Start");
@@ -104,6 +120,13 @@ void setup() {
 }
 
 void loop() { 
+  //是否有按下按鈕
+  if (dMode != last_dMode) {   // != logical "not equal"
+    Serial.println("Buttonpress detected");
+    last_dMode = dMode;
+    cht=!cht;
+  }
+  
   long irValue = particleSensor.getIR();    //Reading the IR value it will permit us to know if there's a finger on the sensor or not
   //是否有放手指
   if (irValue > FINGER_ON ) {
@@ -186,25 +209,26 @@ void loop() {
     avered = 0; aveir = 0; sumirrms = 0; sumredrms = 0;
     SpO2 = 0; ESpO2 = 90.0;
 
+   if (cht)
+   {
     //中文
-    u8g2.setFont(u8g2_font_unifont_t_chinese1); //使用我們做好的字型
-    u8g2.firstPage();
-     do {
-     u8g2.setCursor(35, 40);
-     u8g2.print("放上手指");
-   } while ( u8g2.nextPage() );
- 
-    /* 英文
-    //顯示Finger Please
-    display.clearDisplay();
-    display.setTextSize(2);
-    display.setTextColor(WHITE);
-    display.setCursor(30, 5);
-    display.println("Finger");
-    display.setCursor(30, 35);
-    display.println("Please");
-    display.display();
-    */
+      u8g2.setFont(u8g2_font_unifont_t_chinese1); //使用我們做好的字型
+      u8g2.firstPage();
+       do {
+       u8g2.setCursor(35, 40);
+       u8g2.print("放上手指");
+     } while ( u8g2.nextPage() );
+   }else{
+      //顯示Finger Please
+      display.clearDisplay();
+      display.setTextSize(2);
+      display.setTextColor(WHITE);
+      display.setCursor(30, 5);
+      display.println("Finger");
+      display.setCursor(30, 35);
+      display.println("Please");
+      display.display();
+   }
     noTone(Tonepin);
   }
 }
