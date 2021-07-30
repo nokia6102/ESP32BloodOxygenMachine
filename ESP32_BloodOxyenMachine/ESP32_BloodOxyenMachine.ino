@@ -1,5 +1,5 @@
 //離線版版本20210705，https://youtu.be/ghTtpUTSc4o
-//安裝3個程式庫：1.Adafruit SSD1306、2.MAX30105、3.ESP32Servo
+//安裝4個程式庫：1.Adafruit SSD1306、2.MAX30105、3.ESP32Servo、4.U8g2
 //關於MAX30102可以參閱文件：https://datasheets.maximintegrated.com/en/ds/MAX30102.pdf
 //https://pdfserv.maximintegrated.com/en/an/AN6409.pdf
 #include <Adafruit_GFX.h>        //OLED libraries
@@ -10,7 +10,7 @@
 #include "ESP32Servo.h"
 #include <U8g2lib.h>            //中文字庫
 
-U8G2_SSD1306_128X64_NONAME_1_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
+U8G2_SSD1306_128X64_NONAME_1_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);   //中文字庫用變數
 
 MAX30105 particleSensor;
 int Tonepin = 4;
