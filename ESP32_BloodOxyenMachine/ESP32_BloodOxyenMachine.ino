@@ -140,9 +140,15 @@ void loop() {
     display.print(beatAvg); display.println(" BPM");//顯示心跳數值
     display.drawBitmap(0, 35, O2_bmp, 32, 32, WHITE);//顯示氧氣圖示
     display.setCursor(42, 40);//設定游標位置
+
+    //讓血氧未有數字時顯示有在跳的感覺動畫跑馬燈
+    String reportString = "----";
+    int mod = i%17;
+    reportString.setCharAt(mod/4, '=');
+ 
     //顯示血氧數值
     if (beatAvg > 30) display.print(String(ESpO2) + "%");
-    else display.print("---- %" );
+    else display.print(reportString + " %" );
     display.display();//顯示螢幕
     //是否有心跳
     if (checkForBeat(irValue) == true) {
