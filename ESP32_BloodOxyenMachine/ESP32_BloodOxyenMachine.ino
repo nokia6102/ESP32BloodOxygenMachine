@@ -2,6 +2,7 @@
 //安裝4個程式庫：1.Adafruit SSD1306、2.MAX30105、3.ESP32Servo、4.U8g2
 //關於MAX30102可以參閱文件：https://datasheets.maximintegrated.com/en/ds/MAX30102.pdf
 //https://pdfserv.maximintegrated.com/en/an/AN6409.pdf
+//中文字庫參考資料：https://blog.jmaker.com.tw/chinese_oled/
 #include <Adafruit_GFX.h>        //OLED libraries
 #include <Adafruit_SSD1306.h>
 #include <Wire.h>
