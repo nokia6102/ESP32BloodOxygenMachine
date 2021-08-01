@@ -13,7 +13,7 @@
 #include <U8g2lib.h>            //中文字庫
 U8G2_SSD1306_128X64_NONAME_1_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);   //中文字庫用變數
 
-#define CHT 0;          
+#define CHT 0          
 bool cht=CHT;       //預設是中文顯示
 
 //---重新定義FlashButton按鍵
