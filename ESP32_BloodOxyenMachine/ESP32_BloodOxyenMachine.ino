@@ -131,6 +131,40 @@ void setup() {
   particleSensor.setPulseAmplitudeRed(0x0A); //Turn Red LED to low to indicate sensor is running
   particleSensor.setPulseAmplitudeGreen(0); //Turn off Green LED
   display.clearDisplay();//清除螢幕
+
+  u8g2.setFont(u8g2_font_unifont_t_chinese1); //使用我們做好的字型
+  u8g2.firstPage();
+     do {
+     u8g2.setCursor(35, 40);
+     u8g2.print("放上手指");
+   } while ( u8g2.nextPage() );
+   
+}
+
+void showRate(){
+          display.setTextColor(WHITE);
+          //心律曲線
+          int y=45-beatAvg/3;
+          display.writeLine(lastx,lasty,x,y,WHITE);
+          lasty=y;
+          lastx=x;
+          //血氧曲線
+          int yO2=31-ESpO2/6;
+          display.writeLine(lastxO2,lastyO2,x,yO2,WHITE);
+          lastyO2=yO2;
+          lastxO2=x;
+          display.display();//顯示螢幕
+          x++; 
+          //文字
+         display.writeFillRect(0,50,128,16,BLACK);
+         display.setCursor(0,50);
+         display.print("BPM:");
+         display.print(beatAvg);
+         if (beatAvg>30){
+          display.print(" Oxygen:");
+          display.print(ESpO2);
+          display.print("%");
+         }
 }
 
 void loop() { 
@@ -151,7 +185,7 @@ void loop() {
   
   long irValue = particleSensor.getIR();    //Reading the IR value it will permit us to know if there's a finger on the sensor or not
   //是否有放手指
-  if (irValue > FINGER_ON ) {
+  if (irValue > FINGER_ON )  {
 //    display.clearDisplay();//清除螢幕
 //    display.drawBitmap(5, 5, logo2_bmp, 24, 21, WHITE);//顯示小的心跳圖示
 //    display.setTextSize(2);//設定文字大小
@@ -161,14 +195,6 @@ void loop() {
 //    display.drawBitmap(0, 35, O2_bmp, 32, 32, WHITE);//顯示氧氣圖示
 //    display.setCursor(42, 40);//設定游標位置
 
-    //讓血氧未有數字時顯示有在跳的感覺動畫跑馬燈
-//    String reportString = "----";
-//    int mod = i%17;
-//    reportString.setCharAt(mod/4, '=');
-// 
-    //顯示血氧數值
-//    if (beatAvg > 30) display.print(String(ESpO2) + "%");
-//    else display.print(reportString + " %" );
     display.display();//顯示螢幕
     //是否有心跳
     if (checkForBeat(irValue) == true) {
@@ -183,15 +209,7 @@ void loop() {
 
   
   
-display.writeFillRect(0,50,128,16,BLACK);
-display.setCursor(0,50);
-display.print("BPM:");
-display.print(beatAvg);
-if (beatAvg>30){
-  display.print(" Oxygen:");
-  display.print(ESpO2);
-  display.print("%");
-}
+
       
       //顯示血氧數值
 //      if (beatAvg > 30) display.print(String(ESpO2) + "%");
@@ -212,29 +230,14 @@ if (beatAvg>30){
         for (byte x = 0 ; x < RATE_SIZE ; x++) beatAvg += rates[x];
         beatAvg /= RATE_SIZE;
 
-       
-        display.setTextColor(WHITE);
-        
-      
-        if (beatAvg>20) {
-          //心律曲線
-          int y=60-beatAvg/3;
-          display.writeLine(lastx,lasty,x,y,WHITE);
-          lasty=y;
-          lastx=x;
-          
-          //血氧曲線
-          int yO2=31-ESpO2/6;
-          display.writeLine(lastxO2,lastyO2,x,yO2,WHITE);
-          lastyO2=yO2;
-          lastxO2=x;
-          
-          display.display();//顯示螢幕
-          x++;
-        }
+//        showRate();
+         
       }
+       showRate();
     }
-
+    
+ 
+    
     //計算血氧
     uint32_t ir, red ;
     double fred, fir;
@@ -271,27 +274,32 @@ if (beatAvg>30){
     avered = 0; aveir = 0; sumirrms = 0; sumredrms = 0;
     SpO2 = 0; ESpO2 = 90.0;
 
-   if (cht)
-   {
-    //中文
-      u8g2.setFont(u8g2_font_unifont_t_chinese1); //使用我們做好的字型
-      u8g2.firstPage();
-       do {
-       u8g2.setCursor(35, 40);
-       u8g2.print("放上手指");
-     } while ( u8g2.nextPage() );
-   }else{
-      //顯示Finger Please
-      display.clearDisplay();
-      display.setTextSize(2);
-      display.setTextColor(WHITE);
-      display.setCursor(30, 5);
-      display.println("Finger");
-      display.setCursor(30, 35);
-      display.println("Please");
-      display.display();
-   }
+            showRate();
+          
+
+//   if (cht)
+//   {
+//    //中文
+//      u8g2.setFont(u8g2_font_unifont_t_chinese1); //使用我們做好的字型
+//      u8g2.firstPage();
+//       do {
+//       u8g2.setCursor(35, 40);
+//       u8g2.print("放上手指");
+//     } while ( u8g2.nextPage() );
+//   }else{
+//      //顯示Finger Please
+//      display.clearDisplay();
+//      display.setTextSize(2);
+//      display.setTextColor(WHITE);
+//      display.setCursor(30, 5);
+//      display.println("Finger");
+//      display.setCursor(30, 35);
+//      display.println("Please");
+//      display.display();
+//   }
     noTone(Tonepin);
-  }
- 
+  }                                                                                                                                                                                                                                             
+
+
+  
 }
