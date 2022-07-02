@@ -214,20 +214,23 @@ if (beatAvg>30){
 
        
         display.setTextColor(WHITE);
-        //心律曲線
-        int y=60-beatAvg/3;
-         if (beatAvg>20) {
-        display.writeLine(lastx,lasty,x,y,WHITE);
-        lasty=y;
-        //血氧曲線
-        int yO2=31-ESpO2/6;
-        display.writeLine(lastxO2,lastyO2,x,yO2,WHITE);
-        lastyO2=yO2;
         
-        lastx=x;
-        lastxO2=x;
-        display.display();//顯示螢幕
-        x++;
+      
+        if (beatAvg>20) {
+          //心律曲線
+          int y=60-beatAvg/3;
+          display.writeLine(lastx,lasty,x,y,WHITE);
+          lasty=y;
+          lastx=x;
+          
+          //血氧曲線
+          int yO2=31-ESpO2/6;
+          display.writeLine(lastxO2,lastyO2,x,yO2,WHITE);
+          lastyO2=yO2;
+          lastxO2=x;
+          
+          display.display();//顯示螢幕
+          x++;
         }
       }
     }
