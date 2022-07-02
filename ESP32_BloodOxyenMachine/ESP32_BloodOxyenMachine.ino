@@ -1,3 +1,5 @@
+//心跳圖版
+
 //離線版版本20210705，https://youtu.be/ghTtpUTSc4o
 //安裝4個程式庫：1.Adafruit SSD1306、2.MAX30105、3.ESP32Servo、4.U8g2
 //關於MAX30102可以參閱文件：https://datasheets.maximintegrated.com/en/ds/MAX30102.pdf
@@ -12,6 +14,10 @@
 #include "ESP32Servo.h"
 #include <U8g2lib.h>            //中文字庫
 U8G2_SSD1306_128X64_NONAME_1_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);   //中文字庫用變數
+
+int x=0;
+int lastx=0;
+int lasty=0;
 
 #define CHT 0          
 bool cht=CHT;       //預設是中文顯示
@@ -119,6 +125,7 @@ void setup() {
 
   particleSensor.setPulseAmplitudeRed(0x0A); //Turn Red LED to low to indicate sensor is running
   particleSensor.setPulseAmplitudeGreen(0); //Turn off Green LED
+  display.clearDisplay();//清除螢幕
 }
 
 void loop() { 
@@ -132,38 +139,51 @@ void loop() {
   long irValue = particleSensor.getIR();    //Reading the IR value it will permit us to know if there's a finger on the sensor or not
   //是否有放手指
   if (irValue > FINGER_ON ) {
-    display.clearDisplay();//清除螢幕
-    display.drawBitmap(5, 5, logo2_bmp, 24, 21, WHITE);//顯示小的心跳圖示
-    display.setTextSize(2);//設定文字大小
-    display.setTextColor(WHITE);//文字顏色
-    display.setCursor(42, 10);//設定游標位置
-    display.print(beatAvg); display.println(" BPM");//顯示心跳數值
-    display.drawBitmap(0, 35, O2_bmp, 32, 32, WHITE);//顯示氧氣圖示
-    display.setCursor(42, 40);//設定游標位置
+//    display.clearDisplay();//清除螢幕
+//    display.drawBitmap(5, 5, logo2_bmp, 24, 21, WHITE);//顯示小的心跳圖示
+//    display.setTextSize(2);//設定文字大小
+//    display.setTextColor(WHITE);//文字顏色
+//    display.setCursor(42, 10);//設定游標位置
+//    display.print(beatAvg); display.println(" BPM");//顯示心跳數值
+//    display.drawBitmap(0, 35, O2_bmp, 32, 32, WHITE);//顯示氧氣圖示
+//    display.setCursor(42, 40);//設定游標位置
 
     //讓血氧未有數字時顯示有在跳的感覺動畫跑馬燈
-    String reportString = "----";
-    int mod = i%17;
-    reportString.setCharAt(mod/4, '=');
- 
+//    String reportString = "----";
+//    int mod = i%17;
+//    reportString.setCharAt(mod/4, '=');
+// 
     //顯示血氧數值
-    if (beatAvg > 30) display.print(String(ESpO2) + "%");
-    else display.print(reportString + " %" );
+//    if (beatAvg > 30) display.print(String(ESpO2) + "%");
+//    else display.print(reportString + " %" );
     display.display();//顯示螢幕
     //是否有心跳
     if (checkForBeat(irValue) == true) {
-      display.clearDisplay();//清除螢幕
-      display.drawBitmap(0, 0, logo3_bmp, 32, 32, WHITE);//顯示大的心跳圖示
-      display.setTextSize(2);//設定文字大小
-      display.setTextColor(WHITE);//文字顏色
-      display.setCursor(42, 10);//設定游標位置
-      display.print(beatAvg); display.println(" BPM");//顯示心跳數值
-      display.drawBitmap(0, 35, O2_bmp, 32, 32, WHITE);//顯示氧氣圖示
-      display.setCursor(42, 40);//設定游標位置
+//      display.clearDisplay();//清除螢幕
+//      display.drawBitmap(0, 0, logo3_bmp, 32, 32, WHITE);//顯示大的心跳圖示
+//      display.setTextSize(2);//設定文字大小
+//      display.setTextColor(WHITE);//文字顏色
+//      display.setCursor(42, 10);//設定游標位置
+//      display.print(beatAvg); display.println(" BPM");//顯示心跳數值
+//      display.drawBitmap(0, 35, O2_bmp, 32, 32, WHITE);//顯示氧氣圖示
+//      display.setCursor(42, 40);//設定游標位置
+
+  
+  
+display.writeFillRect(0,50,128,16,BLACK);
+display.setCursor(0,50);
+display.print("BPM:");
+display.print(beatAvg);
+if (beatAvg>30){
+  display.print(" Oxygen:");
+  display.print(ESpO2);
+  display.print("%");
+}
+      
       //顯示血氧數值
-      if (beatAvg > 30) display.print(String(ESpO2) + "%");
-      else display.print("---- %" );
-      display.display();//顯示螢幕
+//      if (beatAvg > 30) display.print(String(ESpO2) + "%");
+//      else display.print("---- %" );
+      
       tone(Tonepin, 1000);//發出聲音
       delay(10);
       noTone(Tonepin);//停止聲音
@@ -178,6 +198,17 @@ void loop() {
         beatAvg = 0;//計算平均值
         for (byte x = 0 ; x < RATE_SIZE ; x++) beatAvg += rates[x];
         beatAvg /= RATE_SIZE;
+
+       
+        display.setTextColor(WHITE);
+        int y=60-beatsPerMinute/3;
+         if (beatsPerMinute>20) {
+        display.writeLine(lastx,lasty,x,y,WHITE);
+        lasty=y;
+        lastx=x;
+        display.display();//顯示螢幕
+       x++;
+        }
       }
     }
 
@@ -239,4 +270,5 @@ void loop() {
    }
     noTone(Tonepin);
   }
+ 
 }
