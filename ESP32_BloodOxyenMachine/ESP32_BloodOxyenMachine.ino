@@ -1,4 +1,4 @@
-//心跳圖版
+//心跳圖版:雙曲線
 
 //離線版版本20210705，https://youtu.be/ghTtpUTSc4o
 //安裝4個程式庫：1.Adafruit SSD1306、2.MAX30105、3.ESP32Servo、4.U8g2
@@ -18,6 +18,11 @@ U8G2_SSD1306_128X64_NONAME_1_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);   
 int x=0;
 int lastx=0;
 int lasty=0;
+
+int xO2=0;
+int lastxO2=0;
+int lastyO2=0;
+
 
 #define CHT 0          
 bool cht=CHT;       //預設是中文顯示
@@ -135,6 +140,14 @@ void loop() {
     last_dMode = dMode;
     cht=!cht;
   }
+
+  if(x>127)  
+  {
+    display.clearDisplay();
+    x=0;
+    lastx=x;
+    lastxO2=x;
+  }
   
   long irValue = particleSensor.getIR();    //Reading the IR value it will permit us to know if there's a finger on the sensor or not
   //是否有放手指
@@ -201,13 +214,20 @@ if (beatAvg>30){
 
        
         display.setTextColor(WHITE);
-        int y=60-beatsPerMinute/3;
-         if (beatsPerMinute>20) {
+        //心律曲線
+        int y=60-beatAvg/3;
+         if (beatAvg>20) {
         display.writeLine(lastx,lasty,x,y,WHITE);
         lasty=y;
+        //血氧曲線
+        int yO2=31-ESpO2/6;
+        display.writeLine(lastxO2,lastyO2,x,yO2,WHITE);
+        lastyO2=yO2;
+        
         lastx=x;
+        lastxO2=x;
         display.display();//顯示螢幕
-       x++;
+        x++;
         }
       }
     }
