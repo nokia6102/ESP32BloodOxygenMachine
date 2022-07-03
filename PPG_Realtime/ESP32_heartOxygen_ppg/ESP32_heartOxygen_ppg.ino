@@ -2,6 +2,7 @@
  * PPG 版即實顯示波型版，無聲音
  * 血氧<90才BB聲
  * 
+ *參考:https://engineerworkshop.com/blog/graph-your-pulse-with-an-arduino-pulse-ox-plethysmograph/
  */
 #include <Wire.h>
 #include <Adafruit_GFX.h>
