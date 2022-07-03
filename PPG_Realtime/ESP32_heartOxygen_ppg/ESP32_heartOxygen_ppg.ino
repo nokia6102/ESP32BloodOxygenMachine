@@ -1,6 +1,5 @@
 /*
- * PPG 版即實顯示波型版，無聲音
- * 血氧<90才BB聲
+ * PPG 版即實顯示波型版:有偵測滴滴聲音/血氧<90一直BB聲
  * 
  *參考:https://engineerworkshop.com/blog/graph-your-pulse-with-an-arduino-pulse-ox-plethysmograph/
  */
@@ -10,6 +9,7 @@
 #include "MAX30105.h"
 #include "heartRate.h"
 #include "ESP32Servo.h"
+#define ONBOARD_LED  2
 
 MAX30105 particleSensor;
 
@@ -46,8 +46,8 @@ double FSpO2 = 0.7; //filter factor for estimated SpO2
 double frate = 0.95; //low pass filter for IR/red LED value to eliminate AC component
 int i = 0;
 int Num = 30;//取樣100次才計算1次
-#define FINGER_ON 7000 //紅外線最小量（判斷手指有沒有上）
-#define MINIMUM_SPO2 90.0//血氧最小量
+#define FINGER_ON 50000 //紅外線最小量（判斷手指有沒有上）
+#define MINIMUM_SPO2 80.0//血氧最小量
 //Oled
 int xO2=0;
 int lastxO2=0;
@@ -63,6 +63,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET); //Decl
 void setup() {
   Serial.begin(115200);
   Serial.println("Initializing...");
+
+  pinMode(ONBOARD_LED,OUTPUT);
   
   // Initialize sensor
   if (!particleSensor.begin(Wire, I2C_SPEED_FAST)) //Use default I2C port, 400kHz speed
@@ -133,7 +135,8 @@ if (checkForBeat(irValue) == true)
   Serial.print(beatsPerMinute);
   Serial.print(", Avg BPM=");
   Serial.print(beatAvg);
-  if (irValue < 50000)
+  
+  if (irValue < FINGER_ON)
   {
     Serial.print(" No finger?");
     //清除心跳數據
@@ -144,10 +147,7 @@ if (checkForBeat(irValue) == true)
     SpO2 = 0; ESpO2 = 90.0;
     noTone(Tonepin);//停止聲音
   }
-  else
-  {
-
-  }
+  
   Serial.println();
 //--beatRate
 
@@ -184,8 +184,8 @@ if (checkForBeat(irValue) == true)
   lastyO2=yO2;
   lastxO2=x;
      
-  oled.writeFillRect(0,50,128,16,BLACK);
-  oled.setCursor(0,50);
+  oled.writeFillRect(0,52,128,14,BLACK);
+  oled.setCursor(0,52);
   oled.print("BPM:");
   oled.print(beatAvg);
   
@@ -241,7 +241,11 @@ if (checkForBeat(irValue) == true)
         Serial.print("Oxygen % = "); Serial.println(ESpO2);
         sumredrms = 0.0; sumirrms = 0.0; SpO2 = 0;
         i = 0;
-       
+        if (irValue >= FINGER_ON ){
+            tone(Tonepin, 1000);//發出聲音
+            delay(20);
+            noTone(Tonepin);//停止聲音
+        }
        }
       particleSensor.nextSample(); //We're finished with this sample so move to next 
 
