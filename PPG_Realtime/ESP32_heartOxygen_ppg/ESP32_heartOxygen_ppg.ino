@@ -10,11 +10,21 @@
 #include "heartRate.h"
 #include "ESP32Servo.h"
 #define ONBOARD_LED  2
+//---------------------------------------------------------------------
+#include <WiFi.h>
+#include <HTTPClient.h>
+//const char * ssid = "ENTER_YOUR_WIFI_SSID";
+const char * ssid = "Xiaomi_home";
+//const char * password = "ENTER_YOUR_WIFI_PASSWORD";
+const char * password = "0000000";
+//String GOOGLE_SCRIPT_ID = "ENTER_GOOGLE_DEPLOYMENT_ID";
+String GOOGLE_SCRIPT_ID = "00AKfycbxJ4WatmZwZljDp9iWTnpIfFkNtmOh7e1oMs9UEejNHl4o4Bi9Z2PEnnfitFTLDA980000";
+//---------------------------------------------------------------------
+TaskHandle_t Task2;   //宣告任務變數Task2
+bool SendFlag = false;
 
 MAX30105 particleSensor;
-
 int Tonepin = 4;
-
 Adafruit_SSD1306 oled(128, 64, &Wire, -1);
 byte x;
 byte y;
@@ -60,11 +70,89 @@ int lastyO2=0;
 #define OLED_RESET    -1 //Reset pin
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET); //Declaring the display name (display)
 
+uint32_t ir, red ;
+long irValue;
+
+
+
+//任務1副程式Task1_senddata
+void Task2code(void * pvParameters ) {
+  //--------------------------------------------
+//  WiFi.mode(WIFI_STA);
+//  WiFi.begin(ssid, password);
+//
+//  Serial.print("Connecting to Wi-Fi");
+//  while (WiFi.status() != WL_CONNECTED) {
+//    vTaskDelay(500);
+//    Serial.print(".");
+//  }
+//  Serial.println("OK");
+ //--------------------------------------------
+//無窮迴圈
+for (;;) {
+  //偵測上傳旗標是否為true
+   if (SendFlag) {
+      Serial.print("Task1：啟動網頁連線，at core:");
+      Serial.println(xPortGetCoreID());
+      HTTPClient http;
+      //將溫度及濕度以http get參數方式補入網址後方
+      String param;
+      param  = "bpm="+String(beatAvg);
+      param += "&spo="+String(ESpO2);    
+      param += "&ir="+String(irValue);
+      
+      String url="https://script.google.com/macros/s/"+GOOGLE_SCRIPT_ID+"/exec?"+param;
+      Serial.print(url);
+      Serial.println("Postring GPS data to Google Sheet");
+      //---------------------------------------------------------------------
+      //starts posting data to google sheet
+      tone(Tonepin, 1000);//發出聲音
+      delay(20);
+      noTone(Tonepin);//停止聲音
+      http.begin(url.c_str());
+      http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+      int httpCode = http.GET();  
+      Serial.print("HTTP Status Code: ");
+      Serial.println(httpCode);
+      //---------------------------------------------------------------------
+      //getting response from google sheet
+      String payload;
+      if (httpCode == HTTP_CODE_OK) {
+        payload = http.getString();
+         //讀取網頁內容到payload
+        Serial.print("網頁內容=");
+        Serial.println("Payload: "+payload); 
+      }else{
+         //傳送失敗
+        Serial.println("網路傳送失敗");
+      }
+      //---------------------------------------------------------------------
+      //修改完畢，修改傳送旗標=false
+      SendFlag = false;
+      http.end();
+    } else {
+      //Task1休息，delay(1)不可省略
+      delay(1);
+    }
+  }
+}
+
 void setup() {
   Serial.begin(115200);
   Serial.println("Initializing...");
-
   pinMode(ONBOARD_LED,OUTPUT);
+
+  //建立Task2任務並指定在核心0中執行
+  xTaskCreatePinnedToCore(
+                    Task2code,   /* 任務函數 */
+                    "Task2",     /* 任務名稱 */
+                    10000,       /* 任務推疊大小 */
+                    NULL,        /* 任務參數 */
+                    1,           /* 任務優先權(0是最低優先權 */
+                    NULL,      /* 欲追蹤處理的任務名稱 (可使用 &Task2 或 NULL) */
+                    0);          /* 指定此任務的執行核心(0或1) */ 
+
+ 
   
   // Initialize sensor
   if (!particleSensor.begin(Wire, I2C_SPEED_FAST)) //Use default I2C port, 400kHz speed
@@ -103,13 +191,28 @@ void setup() {
   lasty = 0;
   delay(2000);
   oled.clearDisplay();
+  //--------------------------------------------
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+
+  Serial.print("Connecting to Wi-Fi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("OK");
+  //--------------------------------------------
 }
+
 
 
 void loop() {
 
-  //beatRate
-long irValue = particleSensor.getIR();
+//red
+
+
+//beatRate
+irValue = particleSensor.getIR();
 if (checkForBeat(irValue) == true)
   {
     //We sensed a beat!
@@ -131,14 +234,17 @@ if (checkForBeat(irValue) == true)
 
   Serial.print("IR=");
   Serial.print(irValue);
+  Serial.print(", Red=");
+  Serial.print(red);
   Serial.print(", BPM=");
   Serial.print(beatsPerMinute);
   Serial.print(", Avg BPM=");
-  Serial.print(beatAvg);
-  
+  Serial.println(beatAvg);
+//  print_BPM();       //print to google Sheet
+   
   if (irValue < FINGER_ON)
   {
-    Serial.print(" No finger?");
+    Serial.println(" No finger?");
     //清除心跳數據
     for (byte rx = 0 ; rx < RATE_SIZE ; rx++) rates[rx] = 0;
     beatAvg = 0; rateSpot = 0; lastBeat = 0;
@@ -148,11 +254,8 @@ if (checkForBeat(irValue) == true)
     noTone(Tonepin);//停止聲音
   }
   
-  Serial.println();
+//  Serial.println();
 //--beatRate
-
-  
-
   // Display is only 128 pixels wide, so if we're add the end of the display, clear the display and start back over
   if(x>127)  
   {
@@ -193,16 +296,9 @@ if (checkForBeat(irValue) == true)
     oled.print(" Oxygen:");
     oled.print(ESpO2);
     oled.print("%"); 
-    if (ESpO2 < 90)
-    {
-      tone(Tonepin, 1000);//發出聲音
-      delay(20);
-      noTone(Tonepin);//停止聲音
-    }
+    //修改上傳旗標=true
+     SendFlag = true;       
  } 
-
- 
- 
 
   // Keep track of min/max IR readings to keep waveform centered
   if (reading > rollingMax){
@@ -218,7 +314,7 @@ if (checkForBeat(irValue) == true)
   lastx=x;
   
   //計算血氧
-    uint32_t ir, red ;
+//    uint32_t ir, red ;
     double fred, fir;
     particleSensor.check(); //Check the sensor, read up to 3 samples
     if (particleSensor.available()) {
@@ -238,7 +334,7 @@ if (checkForBeat(irValue) == true)
         ESpO2 = FSpO2 * ESpO2 + (1.0 - FSpO2) * SpO2;//low pass filter
         if (ESpO2 <= MINIMUM_SPO2) ESpO2 = MINIMUM_SPO2; //indicator for finger detached
         if (ESpO2 > 100) ESpO2 = 99.9;
-        Serial.print("Oxygen % = "); Serial.println(ESpO2);
+        Serial.print(", Oxygen % = "); Serial.print(ESpO2);
         sumredrms = 0.0; sumirrms = 0.0; SpO2 = 0;
         i = 0;
         if (irValue >= FINGER_ON ){
@@ -248,7 +344,6 @@ if (checkForBeat(irValue) == true)
         }
        }
       particleSensor.nextSample(); //We're finished with this sample so move to next 
-
     }
  
   oled.display();
